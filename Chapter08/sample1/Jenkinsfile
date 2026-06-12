@@ -5,7 +5,7 @@ pipeline {
         stage('Run JaCoCo Coverage Verification') {
             steps {
                 dir('Chapter08/sample1') {
-                    sh './gradlew jacocoTestCoverageVerification'
+                    sh './gradlew test jacocoTestReport jacocoTestCoverageVerification'
                 }
             }
         }
