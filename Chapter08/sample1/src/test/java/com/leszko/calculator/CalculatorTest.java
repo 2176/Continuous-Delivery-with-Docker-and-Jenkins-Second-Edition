@@ -1,10 +1,11 @@
 package com.leszko.calculator;
 
+import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 /**
  * Tests for calculator behavior.
  */
