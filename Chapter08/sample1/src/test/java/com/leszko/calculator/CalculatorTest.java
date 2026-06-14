@@ -5,7 +5,9 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
-
+/**
+ * Tests for calculator behavior.
+ */
 public class CalculatorTest {
      private Calculator calculator = new Calculator();
 
