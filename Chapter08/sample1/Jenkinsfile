@@ -9,5 +9,22 @@ pipeline {
                 }
             }
         }
+
+        stage('Run JaCoCo Checkstyle Test') {
+            steps {
+                dir('Chapter08/sample1') {
+                    sh './gradlew checkstyleTest'
+
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'build/reports',
+                        reportFiles: 'jacoco/test/html/index.html,checkstyle/test.html',
+                        reportName: 'jacoco checkstyle'
+                    ])
+                }
+            }
+        }
     }
 }
