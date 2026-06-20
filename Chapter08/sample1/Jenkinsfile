@@ -2,7 +2,7 @@
 pipeline {
     agent {
         docker {
-            image 'openjdk:8-jdk'
+            image 'eclipse-temurin:8-jdk'
             args '-u root'
         }
     }
