@@ -11,8 +11,18 @@ pipeline {
         stage('Test') {
             steps {
                 dir('Chapter07/sample5') {
+                    writeFile file: 'disable-jacoco.gradle', text: '''
+allprojects {
+    tasks.withType(org.gradle.api.tasks.testing.Test).all { testTask ->
+        def jacocoExt = testTask.extensions.findByName("jacoco")
+        if (jacocoExt != null) {
+            jacocoExt.enabled = false
+        }
+    }
+}
+'''
                     sh 'chmod +x gradlew'
-                    sh './gradlew test -x jacocoTestReport'
+                    sh './gradlew --no-daemon test -I disable-jacoco.gradle'
                 }
             }
         }
