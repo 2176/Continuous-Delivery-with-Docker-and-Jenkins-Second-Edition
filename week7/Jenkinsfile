@@ -12,7 +12,7 @@ pipeline {
             steps {
                 dir('Chapter07/sample5') {
                     sh 'chmod +x gradlew'
-                    sh './gradlew test'
+                    sh './gradlew test -x jacocoTestReport'
                 }
             }
         }
