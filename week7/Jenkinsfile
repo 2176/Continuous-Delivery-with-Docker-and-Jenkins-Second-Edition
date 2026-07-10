@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'gradle-agent' }
+    agent any
 
     stages {
         stage('Checkout') {
@@ -11,8 +11,22 @@ pipeline {
         stage('Test') {
             steps {
                 dir('Chapter07/sample5') {
+                    writeFile file: 'disable-jacoco.gradle', text: '''
+allprojects {
+    afterEvaluate {
+        tasks.withType(org.gradle.api.tasks.testing.Test) { testTask ->
+            if (testTask.extensions.findByName("jacoco") != null) {
+                testTask.jacoco.enabled = false
+            }
+            testTask.jvmArgs = testTask.jvmArgs.findAll { arg ->
+                !arg.toString().contains("jacoco")
+            }
+        }
+    }
+}
+'''
                     sh 'chmod +x gradlew'
-                    sh './gradlew test'
+                    sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
                 }
             }
         }
