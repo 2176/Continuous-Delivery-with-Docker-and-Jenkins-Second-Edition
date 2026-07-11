@@ -1,7 +1,17 @@
-stage('Test') {
-    steps {
-        dir('Chapter07/sample5') {
-            writeFile file: 'disable-jacoco.gradle', text: '''
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('Chapter07/sample5') {
+                    writeFile file: 'disable-jacoco.gradle', text: '''
 allprojects {
     afterEvaluate {
         tasks.withType(org.gradle.api.tasks.testing.Test) { testTask ->
@@ -15,8 +25,10 @@ allprojects {
     }
 }
 '''
-            sh 'chmod +x gradlew'
-            sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
+                    sh 'chmod +x gradlew'
+                    sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
+                }
+            }
         }
     }
 }
