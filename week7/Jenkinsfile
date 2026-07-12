@@ -1,6 +1,9 @@
-// Exercise 7 PR webhook test
 pipeline {
     agent any
+
+    options {
+        skipDefaultCheckout(true)
+    }
 
     stages {
         stage('Checkout') {
@@ -12,24 +15,64 @@ pipeline {
         stage('Test') {
             steps {
                 dir('Chapter07/sample5') {
-                    writeFile file: 'disable-jacoco.gradle', text: '''
+                    sh 'chmod +x gradlew'
+
+                    script {
+                        int result = sh(
+                            script: './gradlew --no-daemon clean test -I force-jacoco.gradle',
+                            returnStatus: true
+                        )
+
+                        if (result == 0) {
+                            echo 'tests pass!'
+                        } else {
+                            echo 'tests fail!'
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
+                }
+            }
+
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'Chapter07/sample5/build/test-results/test/*.xml'
+                }
+            }
+        }
+
+        stage('Code Coverage') {
+            when {
+                branch 'master'
+            }
+
+            steps {
+                dir('Chapter07/sample5') {
+                    writeFile file: 'force-jacoco.gradle', text: '''
 allprojects {
     afterEvaluate {
-        tasks.withType(org.gradle.api.tasks.testing.Test) { testTask ->
-            if (testTask.extensions.findByName("jacoco") != null) {
-                testTask.jacoco.enabled = false
-            }
-            testTask.jvmArgs = testTask.jvmArgs.findAll { arg ->
-                !arg.toString().contains("jacoco")
+        plugins.withId('jacoco') {
+            jacoco {
+                toolVersion = '0.8.12'
             }
         }
     }
 }
 '''
-                    sh 'chmod +x gradlew'
-                    sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
+                    sh './gradlew --no-daemon jacocoTestReport -I force-jacoco.gradle || true'
                 }
             }
+
+            post {
+                always {
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'Chapter07/sample5/build/reports/jacoco/**'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'Chapter07/sample5/build/reports/tests/**'
         }
     }
 }
