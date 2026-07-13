@@ -17,9 +17,24 @@ pipeline {
                 dir('Chapter07/sample5') {
                     sh 'chmod +x gradlew'
 
+                    writeFile file: 'disable-jacoco.gradle', text: '''
+allprojects {
+    afterEvaluate {
+        tasks.withType(org.gradle.api.tasks.testing.Test) { testTask ->
+            if (testTask.extensions.findByName("jacoco") != null) {
+                testTask.jacoco.enabled = false
+            }
+            testTask.jvmArgs = testTask.jvmArgs.findAll { arg ->
+                !arg.toString().contains("jacoco")
+            }
+        }
+    }
+}
+'''
+
                     script {
                         int result = sh(
-                            script: './gradlew --no-daemon clean test',
+                            script: './gradlew --no-daemon clean test -I disable-jacoco.gradle',
                             returnStatus: true
                         )
 
@@ -47,18 +62,7 @@ pipeline {
 
             steps {
                 dir('Chapter07/sample5') {
-                    writeFile file: 'force-jacoco.gradle', text: '''
-allprojects {
-    afterEvaluate {
-        plugins.withId('jacoco') {
-            jacoco {
-                toolVersion = '0.8.12'
-            }
-        }
-    }
-}
-'''
-                    sh './gradlew --no-daemon jacocoTestReport -I force-jacoco.gradle || true'
+                    sh './gradlew --no-daemon jacocoTestReport || true'
                 }
             }
 
