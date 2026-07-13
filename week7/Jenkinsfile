@@ -1,70 +1,19 @@
-pipeline {
-    agent any
+stage('Test') {
+    steps {
+        dir('Chapter07/sample5') {
+            sh 'chmod +x gradlew'
 
-    options {
-        skipDefaultCheckout(true)
-    }
+            script {
+                int result = sh(
+                    script: './gradlew --no-daemon clean test',
+                    returnStatus: true
+                )
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Test') {
-            steps {
-                dir('Chapter07/sample5') {
-                    sh 'chmod +x gradlew'
-
-                    script {
-                        int result = sh(
-                            script: './gradlew --no-daemon clean test -I force-jacoco.gradle',
-                            returnStatus: true
-                        )
-
-                        if (result == 0) {
-                            echo 'tests pass!'
-                        } else {
-                            echo 'tests fail!'
-                            currentBuild.result = 'FAILURE'
-                        }
-                    }
-                }
-            }
-
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'Chapter07/sample5/build/test-results/test/*.xml'
-                }
-            }
-        }
-
-        stage('Code Coverage') {
-            when {
-                branch 'master'
-            }
-
-            steps {
-                dir('Chapter07/sample5') {
-                    writeFile file: 'force-jacoco.gradle', text: '''
-allprojects {
-    afterEvaluate {
-        plugins.withId('jacoco') {
-            jacoco {
-                toolVersion = '0.8.12'
-            }
-        }
-    }
-}
-'''
-                    sh './gradlew --no-daemon jacocoTestReport -I force-jacoco.gradle || true'
-                }
-            }
-
-            post {
-                always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'Chapter07/sample5/build/reports/jacoco/**'
+                if (result == 0) {
+                    echo 'tests pass!'
+                } else {
+                    echo 'tests fail!'
+                    currentBuild.result = 'FAILURE'
                 }
             }
         }
@@ -72,7 +21,7 @@ allprojects {
 
     post {
         always {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'Chapter07/sample5/build/reports/tests/**'
+            junit allowEmptyResults: true, testResults: 'Chapter07/sample5/build/test-results/test/*.xml'
         }
     }
 }
