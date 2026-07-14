@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,6 +15,8 @@ pipeline {
         stage('Test') {
             steps {
                 dir('Chapter07/sample5') {
+                    sh 'chmod +x gradlew'
+
                     writeFile file: 'disable-jacoco.gradle', text: '''
 allprojects {
     afterEvaluate {
@@ -25,10 +31,66 @@ allprojects {
     }
 }
 '''
-                    sh 'chmod +x gradlew'
-                    sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
+                    script {
+                        try {
+                            sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
+                            echo 'tests pass!'
+                        } catch (err) {
+                            echo 'tests fail!'
+                            throw err
+                        }
+                    }
                 }
             }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'Chapter07/sample5/build/test-results/test/*.xml'
+                }
+            }
+        }
+
+        stage('Code Coverage') {
+            when {
+                branch 'master'
+            }
+            steps {
+                dir('Chapter07/sample5') {
+                    sh 'chmod +x gradlew'
+
+                    writeFile file: 'force-jacoco.gradle', text: '''
+allprojects {
+    afterEvaluate {
+        plugins.withId('jacoco') {
+            jacoco {
+                toolVersion = '0.8.8'
+            }
+        }
+    }
+}
+'''
+                    script {
+                        try {
+                            sh './gradlew --no-daemon clean test jacocoTestReport -I force-jacoco.gradle'
+                            echo 'tests pass!'
+                        } catch (err) {
+                            echo 'tests fail!'
+                            throw err
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'Chapter07/sample5/build/test-results/test/*.xml'
+                    archiveArtifacts artifacts: 'Chapter07/sample5/build/reports/jacoco/**', allowEmptyArchive: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'Chapter07/sample5/build/reports/**', allowEmptyArchive: true
         }
     }
 }
