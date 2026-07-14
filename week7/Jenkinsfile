@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,6 +15,8 @@ pipeline {
         stage('Test') {
             steps {
                 dir('Chapter07/sample5') {
+                    sh 'chmod +x gradlew'
+
                     writeFile file: 'disable-jacoco.gradle', text: '''
 allprojects {
     afterEvaluate {
@@ -25,10 +31,52 @@ allprojects {
     }
 }
 '''
-                    sh 'chmod +x gradlew'
-                    sh './gradlew --no-daemon clean test -I disable-jacoco.gradle'
+
+                    script {
+                        int result = sh(
+                            script: './gradlew --no-daemon clean test -I disable-jacoco.gradle',
+                            returnStatus: true
+                        )
+
+                        if (result == 0) {
+                            echo 'tests pass!'
+                        } else {
+                            echo 'tests fail!'
+                            currentBuild.result = 'FAILURE'
+                        }
+                    }
                 }
             }
+
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'Chapter07/sample5/build/test-results/test/*.xml'
+                }
+            }
+        }
+
+        stage('Code Coverage') {
+            when {
+                branch 'master'
+            }
+
+            steps {
+                dir('Chapter07/sample5') {
+                    sh './gradlew --no-daemon jacocoTestReport || true'
+                }
+            }
+
+            post {
+                always {
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'Chapter07/sample5/build/reports/jacoco/**'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'Chapter07/sample5/build/reports/tests/**'
         }
     }
 }
